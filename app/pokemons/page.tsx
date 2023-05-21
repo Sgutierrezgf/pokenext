@@ -1,186 +1,200 @@
 "use client";
 
-import { signOut } from "next-auth/react";
-import React, { useState, useEffect } from "react";
-import axios from "axios";
+import React from "react";
+import { useQueries, useQuery } from "@tanstack/react-query";
 
-type Props = {};
+import { Header } from "../components/Header";
+import { client } from "../clients/pokeapi";
+import { POKEMON_TYPE_COLORS, QueryKeys } from "../constants";
+import { GetPaginatedPokemonsResponse, Pokemon } from "../types";
+import SelectedPokemon from "./components/SelectedPokemon";
+import Modal from "../components/Modal";
+// import img from "next/img";
 
-interface Pokemon {
-  name: string;
-  image: string;
-  height: number;
-  weight: number;
-}
-
-const Pokemons = (props: Props) => {
-  const [pokemonList, setPokemonList] = useState<Pokemon[]>([]);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(0);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [selectedPokemon, setSelectedPokemon] = useState<Pokemon | null>(null);
-
-  useEffect(() => {
-    fetchPokemonList();
-  }, [currentPage]);
-
-  const fetchPokemonList = async () => {
-    try {
-      const response = await axios.get(
-        `https://pokeapi.co/api/v2/pokemon?limit=10&offset=${
-          (currentPage - 1) * 10
-        }`
-      );
-      const { results, count } = response.data;
-      const pokemons = await Promise.all(
-        results.map(async (pokemon: any) => {
-          const response = await axios.get(pokemon.url);
-          const { name, sprites, height, weight } = response.data;
-          return {
-            name,
-            image: sprites.front_default,
-            height,
-            weight,
-          };
-        })
-      );
-      setPokemonList(pokemons);
-      setTotalPages(Math.ceil(count / 10));
-    } catch (error) {
-      console.error("Error fetching Pokémon list:", error);
-    }
-  };
-
-  const handlePrevPage = () => {
-    setCurrentPage((prevPage) => prevPage - 1);
-  };
-
-  const handleNextPage = () => {
-    setCurrentPage((prevPage) => prevPage + 1);
-  };
-
-  const handleSearchChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    setSearchTerm(event.target.value);
-  };
-
-  const handleSearchSubmit = (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    setCurrentPage(1);
-    fetchPokemonList();
-  };
-
-  const handlePokemonClick = (pokemon: Pokemon) => {
-    setSelectedPokemon(pokemon);
-  };
-
-  const closeModal = () => {
-    setSelectedPokemon(null);
-  };
-
-  const filteredPokemonList = pokemonList.filter((pokemon) =>
-    pokemon.name.toLowerCase().includes(searchTerm.toLowerCase())
+const fetchPokemons = async (page: number) => {
+  const response = await client.get<GetPaginatedPokemonsResponse>(
+    `/pokemon?limit=10&offset=${(page - 1) * 10}`
   );
 
-  const handlePageChange = (pageNumber: number) => {
-    setCurrentPage(pageNumber);
+  return response.data;
+};
+
+const fetchPokemon = async (name: string) => {
+  const response = await client.get<Pokemon>(`/pokemon/${name}`);
+
+  return response.data;
+};
+
+const Pokemons = () => {
+  const [page, setPage] = React.useState<number>(1);
+  const [isSelectedPokemonVisible, setIsSelectedPokemonVisible] =
+    React.useState<boolean>(false);
+  const [selectedPokemon, setSelectedPokemon] = React.useState<Pokemon>();
+
+  const {
+    isLoading,
+    isError,
+    error,
+    data: pokeListData,
+    isPreviousData,
+  } = useQuery({
+    queryKey: [QueryKeys.POKEMON_LIST, { page }],
+    queryFn: () => fetchPokemons(page),
+    select(response) {
+      return {
+        pokemonList: response?.results,
+        hasMore: Boolean(response?.next),
+        count: response?.count,
+      };
+    },
+    keepPreviousData: true,
+  });
+
+  const pokeDetailsQueries =
+    pokeListData?.pokemonList?.map((pokemon) => ({
+      queryKey: [QueryKeys.POKEMON, pokemon?.name],
+      queryFn: () => fetchPokemon(String(pokemon.name)),
+      select(data: Pokemon) {
+        return data;
+      },
+      enabled: Boolean(pokemon?.name),
+      refetchOnWindowFocus: false,
+    })) || [];
+
+  const pokeDetails = useQueries({ queries: pokeDetailsQueries });
+  const totalPages = Math.ceil(Number(pokeListData?.count) / 10) || 0;
+
+  const handleSelectPokemon = (pokemon?: Pokemon) => {
+    setSelectedPokemon(pokemon);
+    setIsSelectedPokemonVisible(true);
   };
 
   return (
-    <div>
-      <div className="flex justify-between items-center mb-4">
-        <h1 className="text-2xl font-bold">Pokémon List</h1>
-        <button
-          onClick={() => signOut()}
-          className="bg-blue-500 text-white rounded px-4 py-2"
-        >
-          Logout
-        </button>
-      </div>
-      <form onSubmit={handleSearchSubmit} className="mb-4 text-center">
-        <input
-          type="text"
-          value={searchTerm}
-          onChange={handleSearchChange}
-          placeholder="Search Pokémon by name"
-          className="border border-gray-300 rounded px-4 py-2 mr-2 "
-        />
-        <button
-          type="submit"
-          className="bg-blue-500 text-white rounded px-4 py-2"
-        >
-          Search
-        </button>
-      </form>
-      <div className="grid gap-x-8 gap-y-4 grid-cols-3">
-        {filteredPokemonList.map((pokemon) => (
-          <div
-            key={pokemon.name}
-            onClick={() => handlePokemonClick(pokemon)}
-            className="cursor-pointer justify-self-center"
-          >
-            <img src={pokemon.image} alt={pokemon.name} className="w-24 h-24" />
-            <p className="text-center">{pokemon.name}</p>
-          </div>
-        ))}
-      </div>
-      <div className="mt-4 text-center">
-        <button
-          onClick={handlePrevPage}
-          disabled={currentPage === 1}
-          className="bg-gray-300 text-gray-600 rounded px-4 py-2 mr-2"
-        >
-          Previous Page
-        </button>
-        {Array.from(Array(totalPages).keys())
-          .filter(
-            (page) =>
-              (currentPage <= 10 && page < 10) ||
-              (currentPage > 10 &&
-                page >= Math.floor((currentPage - 1) / 10) * 10 &&
-                page < Math.floor((currentPage - 1) / 10) * 10 + 10)
-          )
-          .map((page) => (
-            <button
-              key={page + 1}
-              onClick={() => handlePageChange(page + 1)}
-              className={`${
-                currentPage === page + 1
-                  ? "bg-blue-500 text-white"
-                  : "bg-gray-300 text-gray-600"
-              } rounded px-4 py-2 mr-2`}
-            >
-              {page + 1}
-            </button>
-          ))}
-        <button
-          onClick={handleNextPage}
-          disabled={currentPage === totalPages}
-          className="bg-gray-300 text-gray-600 rounded px-4 py-2"
-        >
-          Next Page
-        </button>
-      </div>
-      {selectedPokemon && (
-        <div className="fixed inset-0 flex items-center justify-center z-50">
-          <div className="modal-overlay fixed inset-0 bg-black opacity-50"></div>
-          <div className="modal-container bg-white w-64 p-4 rounded z-50">
-            <h2 className="text-xl font-bold mb-2">{selectedPokemon.name}</h2>
-            <img
-              src={selectedPokemon.image}
-              alt={selectedPokemon.name}
-              className="w-full"
-            />
-            <p className="mt-2">Height: {selectedPokemon.height}</p>
-            <p>Weight: {selectedPokemon.weight}</p>
-            <button
-              onClick={closeModal}
-              className="bg-blue-500 text-white rounded px-4 py-2 mt-4"
-            >
-              Close
-            </button>
-          </div>
+    <div className="min-h-screen bg-custom-gray-50">
+      <div className="">
+        <Header />
+        <div className="p-4 grid gap-4 max-w-7xl m-auto">
+          {isLoading ? (
+            <div>Loading...</div>
+          ) : isError ? (
+            // TODO: fix this any
+            <div>Error: {error as any}</div>
+          ) : (
+            <div className="grid gap-6 md:grid-cols-12">
+              <div
+                className={`col-span-12  grid w-full h-fit grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-x-6 gap-y-16 mt-20`}
+              >
+                {pokeDetails?.map(({ data, isLoading }) => (
+                  <button
+                    key={data?.id}
+                    className="bg-white h-full relative w-full p-4 shadow-sm rounded-2xl"
+                    onClick={() => handleSelectPokemon(data)}
+                  >
+                    {isLoading ? (
+                      <div role="status" className="max-w-sm animate-pulse">
+                        <div className="bg-gray-200 dark:bg-gray-700 relative w-full h-32 p-4 shadow-sm rounded-2xl" />
+                      </div>
+                    ) : (
+                      <div className="flex items-center h-full pt-8 justify-center flex-col">
+                        <div
+                          className={`absolute flex items-start -top-12 h-[105px]`}
+                        >
+                          <img
+                            className="m-auto"
+                            loading="lazy"
+                            src={
+                              data?.sprites.versions?.["generation-v"][
+                                "black-white"
+                              ].animated?.front_default ??
+                              data?.sprites.versions?.["generation-v"][
+                                "black-white"
+                              ].front_default ??
+                              `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${data?.id}.png`
+                            }
+                            alt={`${data?.name} picture`}
+                          />
+                        </div>
+                        <div className="text-center grid gap-1">
+                          <span className="blck text-xs text-gray-400 mt-3 font-extrabold">
+                            N°{data?.id}
+                          </span>
+                          <span className="mt-2 block text-lg text-gray-800 font-bold capitalize">
+                            {data?.name}
+                          </span>
+                          <ul className="flex gap-2 justify-center">
+                            {data?.types.map((type) => (
+                              <li
+                                style={{
+                                  backgroundColor:
+                                    POKEMON_TYPE_COLORS[
+                                      type.type
+                                        .name as keyof typeof POKEMON_TYPE_COLORS
+                                    ],
+                                }}
+                                className={`font-semibold px-3 py-1 rounded-lg text-white text-[11px] uppercase`}
+                                key={type.type.name}
+                              >
+                                {type.type.name}
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      </div>
+                    )}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
-      )}
+        <div className="flex gap-4 justify-center mt-12">
+          <button
+            className="disabled:text-gray-300  disabled:cursor-not-allowed"
+            onClick={() => setPage((old) => Math.max(old - 1, 0))}
+            disabled={page === 1}
+          >
+            Previous Page
+          </button>
+          {Array.from(Array(totalPages).keys())
+            .filter(
+              (current) =>
+                (page <= 10 && current < 10) ||
+                (page > 10 &&
+                  current >= Math.floor((page - 1) / 10) * 10 &&
+                  current < Math.floor((page - 1) / 10) * 10 + 10)
+            )
+            .map((current) => (
+              <button
+                key={current + 1}
+                onClick={() => setPage(current + 1)}
+                className={`${
+                  page === current + 1
+                    ? "bg-primary text-white"
+                    : "bg-gray-200 text-gray-500"
+                } text-sm shadow-sm rounded-lg px-4 py-2 mr-2`}
+              >
+                {current + 1}
+              </button>
+            ))}
+          <button
+            onClick={() => {
+              if (!isPreviousData && pokeListData?.hasMore) {
+                setPage((old) => old + 1);
+              }
+            }}
+            // Disable the Next Page button until we know a next page is available
+            disabled={isPreviousData || !pokeListData?.hasMore}
+          >
+            Next Page
+          </button>
+        </div>
+      </div>
+      <Modal
+        isOpen={isSelectedPokemonVisible}
+        onClose={() => setIsSelectedPokemonVisible(false)}
+      >
+        <SelectedPokemon selectedPokemon={selectedPokemon} />
+      </Modal>
     </div>
   );
 };

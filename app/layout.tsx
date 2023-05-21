@@ -4,6 +4,7 @@ import { Toaster } from "react-hot-toast";
 import AuthContext from "./context/AuthContext";
 
 import "./globals.css";
+import ReactQueryContext from "./context/ReactQueryContext";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -20,10 +21,12 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={inter.className}>
-        <AuthContext>
-          <Toaster />
-          {children}
-        </AuthContext>
+        <ReactQueryContext>
+          <AuthContext>
+            <Toaster />
+            {children}
+          </AuthContext>
+        </ReactQueryContext>
       </body>
     </html>
   );
