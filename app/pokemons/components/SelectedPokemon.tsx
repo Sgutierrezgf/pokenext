@@ -3,7 +3,7 @@
 import { POKEMON_TYPE_COLORS } from "@/app/constants";
 import { Pokemon } from "@/app/types";
 import React from "react";
-import img from "next/image";
+import Image from "next/image";
 
 type Props = {
   selectedPokemon?: Pokemon;
@@ -22,11 +22,13 @@ const SelectedPokemon = ({ selectedPokemon }: Props) => {
         }}
         className="rounded-t-lg"
       >
-        <img
+        <Image
           loading="lazy"
+          height={224}
+          width={224}
           className="h-56 aspect-square m-auto"
           src={`https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${selectedPokemon?.id}.png`}
-          alt={selectedPokemon?.name}
+          alt={`${selectedPokemon?.name}`}
         />
         <div className="flex justify-end">
           <div>

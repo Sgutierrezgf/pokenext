@@ -10,7 +10,7 @@ import SelectedPokemon from "./components/SelectedPokemon";
 import Modal from "../components/Modal";
 import { fetchPokemons, fetchPokemon } from "../api";
 import { AiOutlineArrowLeft, AiOutlineArrowRight } from "react-icons/ai";
-// import img from "next/img";
+import Image from "next/image";
 
 const Pokemons = () => {
   const [page, setPage] = React.useState<number>(1);
@@ -87,8 +87,10 @@ const Pokemons = () => {
                         <div
                           className={`absolute flex items-start -top-12 h-[105px]`}
                         >
-                          <img
+                          <Image
                             className="m-auto"
+                            width={60}
+                            height={60}
                             loading="lazy"
                             src={
                               data?.sprites.versions?.["generation-v"][

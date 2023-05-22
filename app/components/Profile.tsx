@@ -1,15 +1,18 @@
 import { useSession } from "next-auth/react";
 import React from "react";
 import { userImage } from "../constants";
+import Image from "next/image";
 
 const Profile = () => {
   const { data } = useSession();
   return (
     <article className="flex m-5 place-self-center gap-12">
-      <img
+      <Image
         className="h-40 w-40 rounded-full"
         src={data?.user?.image || userImage}
-        alt=""
+        alt={`${data?.user?.name}`}
+        width={200}
+        height={200}
       />
       <div className=" self-center text-center">
         <div className="grid">

@@ -1,11 +1,10 @@
 import { Disclosure, Menu, Transition } from "@headlessui/react";
 import { signOut, useSession } from "next-auth/react";
-import PokeLogo from "../src/img/pokelogo.png";
 import { Fragment } from "react";
-import img from "next/image";
 import Modal from "./Modal";
 import React from "react";
 import Profile from "./Profile";
+import Image from "next/image";
 import { userImage } from "../constants";
 
 function classNames(...classes: string[]) {
@@ -30,15 +29,20 @@ export const Header = () => {
           <div className="relative flex h-16 justify-between">
             <div className="flex flex-1 items-center justify-center sm:items-stretch sm:justify-start">
               <div className="flex flex-shrink-0 items-center">
-                <img
+                <Image
+                  id="Image"
                   className="block h-12 w-auto lg:hidden"
                   src="https://upload.wikimedia.org/wikipedia/commons/thumb/9/98/International_Pok%C3%A9mon_logo.svg/2560px-International_Pok%C3%A9mon_logo.svg.png"
-                  alt="Your Company"
+                  alt={`${data?.user?.name}`}
+                  width={100}
+                  height={100}
                 />
-                <img
+                <Image
                   className="hidden h-12 w-auto lg:block"
                   src="https://upload.wikimedia.org/wikipedia/commons/thumb/9/98/International_Pok%C3%A9mon_logo.svg/2560px-International_Pok%C3%A9mon_logo.svg.png"
                   alt="Your Company"
+                  width={100}
+                  height={100}
                 />
               </div>
             </div>
@@ -56,10 +60,12 @@ export const Header = () => {
                     <span id="name" className="font-semibold text-gray-500">
                       {data?.user?.name}
                     </span>
-                    <img
+                    <Image
                       className="h-8 w-8 rounded-full"
                       src={data?.user?.image || userImage}
-                      alt=""
+                      alt={`${data?.user?.name}`}
+                      width={100}
+                      height={100}
                     />
                   </Menu.Button>
                 </div>
@@ -80,7 +86,7 @@ export const Header = () => {
                       {({ active }) => (
                         <button
                           id="profile"
-                          onClick={() => handleSelectPokemon()}
+                          onClick={() => handleSelectPokemon(data)}
                           className={classNames(
                             active ? "bg-gray-100" : "",
                             "block px-4 py-2 text-sm text-gray-700 w-full"
