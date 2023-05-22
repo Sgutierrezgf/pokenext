@@ -2,28 +2,15 @@
 
 import React from "react";
 import { useQueries, useQuery } from "@tanstack/react-query";
-
 import { Header } from "../components/Header";
 import { client } from "../clients/pokeapi";
 import { POKEMON_TYPE_COLORS, QueryKeys } from "../constants";
 import { GetPaginatedPokemonsResponse, Pokemon } from "../types";
 import SelectedPokemon from "./components/SelectedPokemon";
 import Modal from "../components/Modal";
+import { fetchPokemons, fetchPokemon } from "../api";
+import { AiOutlineArrowLeft, AiOutlineArrowRight } from "react-icons/ai";
 // import img from "next/img";
-
-const fetchPokemons = async (page: number) => {
-  const response = await client.get<GetPaginatedPokemonsResponse>(
-    `/pokemon?limit=10&offset=${(page - 1) * 10}`
-  );
-
-  return response.data;
-};
-
-const fetchPokemon = async (name: string) => {
-  const response = await client.get<Pokemon>(`/pokemon/${name}`);
-
-  return response.data;
-};
 
 const Pokemons = () => {
   const [page, setPage] = React.useState<number>(1);
@@ -86,6 +73,7 @@ const Pokemons = () => {
               >
                 {pokeDetails?.map(({ data, isLoading }) => (
                   <button
+                    id="selectpokemon"
                     key={data?.id}
                     className="bg-white h-full relative w-full p-4 shadow-sm rounded-2xl"
                     onClick={() => handleSelectPokemon(data)}
@@ -153,7 +141,7 @@ const Pokemons = () => {
             onClick={() => setPage((old) => Math.max(old - 1, 0))}
             disabled={page === 1}
           >
-            Previous Page
+            <AiOutlineArrowLeft className="h-6 w-6" />
           </button>
           {Array.from(Array(totalPages).keys())
             .filter(
@@ -185,7 +173,7 @@ const Pokemons = () => {
             // Disable the Next Page button until we know a next page is available
             disabled={isPreviousData || !pokeListData?.hasMore}
           >
-            Next Page
+            <AiOutlineArrowRight className="h-6 w-6" />
           </button>
         </div>
       </div>

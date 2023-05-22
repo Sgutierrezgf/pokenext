@@ -28,8 +28,8 @@ const SelectedPokemon = ({ selectedPokemon }: Props) => {
           src={`https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${selectedPokemon?.id}.png`}
           alt={selectedPokemon?.name}
         />
-        <div className="grid grid-cols-2 gap-2">
-          <div className="grid">
+        <div className="flex justify-end">
+          <div>
             <span className="font-extrabold py-2 text-gray-800 text-sm">
               HEIGHT
             </span>
