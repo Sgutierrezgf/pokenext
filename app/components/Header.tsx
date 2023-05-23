@@ -16,7 +16,7 @@ export const Header = () => {
     React.useState<boolean>(false);
 
   const { data } = useSession();
-  const [selectedUSer, setSelectedUser] = React.useState();
+  const [selectedUSer, setSelectedUser] = React.useState<any>();
   const handleSelectPokemon = (data: any) => {
     setSelectedUser(data);
     setIsSelectedUSerVisible(true);
@@ -40,7 +40,7 @@ export const Header = () => {
                 <Image
                   className="hidden h-12 w-auto lg:block"
                   src="https://upload.wikimedia.org/wikipedia/commons/thumb/9/98/International_Pok%C3%A9mon_logo.svg/2560px-International_Pok%C3%A9mon_logo.svg.png"
-                  alt="Your Company"
+                  alt={`${data?.user?.name}`}
                   width={100}
                   height={100}
                 />
@@ -120,7 +120,7 @@ export const Header = () => {
           isOpen={isSelectedUserVisible}
           onClose={() => setIsSelectedUSerVisible(false)}
         >
-          <Profile selectedUSer={selectedUSer} />
+          <Profile selectedUser={selectedUSer} />
         </Modal>
       </>
     </Disclosure>

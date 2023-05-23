@@ -3,7 +3,11 @@ import React from "react";
 import { userImage } from "../constants";
 import Image from "next/image";
 
-const Profile = () => {
+interface ProfileProps {
+  selectedUser: any; // Reemplaza 'any' con el tipo adecuado para la propiedad selectedUser
+}
+
+const Profile: React.FC<ProfileProps> = ({ selectedUser }) => {
   const { data } = useSession();
   return (
     <article className="flex m-5 place-self-center gap-12">
